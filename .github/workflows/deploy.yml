@@ -1,0 +1,45 @@
+name: Node.js CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main  # Trigger on push to the 'main' branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest  # Use GitHub's latest Ubuntu runner
+
+    steps:
+      # Step 1: Checkout the code from GitHub
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Node.js version
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'  # You can specify the Node.js version here
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Step 4: Deploy to local server using SSH
+      - name: Deploy to server
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}  # We will add this secret
+        run: |
+          # Save the SSH private key to a file
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          # Connect to the server and deploy
+          ssh -o StrictHostKeyChecking=no username@your-server-ip << 'EOF'
+            cd /path/to/your/project  # Navigate to your project folder
+            git pull origin main  # Pull the latest code from GitHub
+
+            npm install  # Install dependencies (if any)
+
+            pm2 restart app_name  # Restart the app with PM2 (replace app_name with your app's name)
+          EOF
